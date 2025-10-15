@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import morgan from "morgan";
-import { validators, readonlyProperties } from './schema.js';
+import { validators, readonlyProperties } from './schema.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
