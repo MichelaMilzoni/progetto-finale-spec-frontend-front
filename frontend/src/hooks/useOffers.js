@@ -87,6 +87,19 @@ export default function useOffers() {
         // ricalcola solo quando cambia l'array base 'offers'
     }, [offers, filters.origin, filters.destination])
 
+    // 3.1 useMemo per origini
+    const availableOrigins = useMemo(() => {
+        const origins = offers.map(o => o.origin).filter(Boolean);
+        return [...new Set(origins)].sort();
+    }, [offers])
+
+    //3.2 useMemo per destinazioni
+    const availableDestinations = useMemo(() => {
+        const destinations = offers.map(o => o.destination).filter(Boolean);
+        return [...new Set(destinations)].sort();
+    }, [offers])
+
+
     // restituisco lo stato e le funzioni per i componenti React
     return {
         // Dati da visualizzare (già filtrati lato client)
@@ -97,7 +110,9 @@ export default function useOffers() {
         // Logica filtri
         filters, 
         updateFilters,
-        // Funzione per recuperare il set completo delle categorie
-        availableCategories: offers.map(o => o.category), // Potrebbe essere migliorato con la deduplicazione
+        // Funzione per recuperare il set completo delle categorie, tratte
+        availableCategories: [...new Set(offers.map(o => o.category))].sort(), 
+        availableOrigins: availableOrigins, 
+        availableDestinations: availableDestinations, 
     };
 }
