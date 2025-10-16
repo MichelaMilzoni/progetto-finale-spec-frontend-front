@@ -5,10 +5,44 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import morgan from "morgan";
-import { validators, readonlyProperties } from './schema.ts';
+
+import { CompanyOfferSchema, SERVICE_CATEGORIES } from './types.ts';
+import z from 'zod'; // Importa Zod, necessario per la logica del validator
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const validators = {
+    companyoffer: (data) => {
+        try {
+            // Qui usiamo CompanyOfferSchema che contiene TUTTE le regole Zod
+            const result = CompanyOfferSchema.parse(data);
+            return { valid: true, data: result };
+        } catch (error) {
+            // Se l'errore è di tipo Zod, lo formattiamo
+            if (error instanceof z.ZodError) {
+                return { 
+                    valid: false, 
+                    errors: error.errors.map(err => ({
+                        field: err.path.join('.'),
+                        message: err.message
+                    }))
+                };
+            }
+            // Gestione di altri errori
+            return { valid: false, errors: [{ field: "Generale", message: "Errore di validazione sconosciuto." }] };
+        }
+    }
+};
+
+const readonlyProperties = {
+    // Definisci qui le proprietà che non devono essere modificabili tramite PUT
+    companyoffer: [
+        'id',
+        'createdAt',
+        'updatedAt'
+    ]
+};
 
 const app = express();
 const PORT = 3001;
