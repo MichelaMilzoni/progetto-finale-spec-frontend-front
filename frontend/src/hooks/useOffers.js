@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import offersApi from '../api/offersApi';
+import { useLocalStorage } from './useLocalStorage';
 
 export default function useOffers() {
     //* STATI:
@@ -28,6 +29,9 @@ export default function useOffers() {
     const [isLoading, setIsLoading] = useState(true)
     // errori: memorizzare eventuali messaggi di errore di rete o di caricamento
     const [error, setError] = useState(null)
+    // LocalStorage - preferiti + confronto
+    const [favoriteIds, setFavoriteIds] = useLocalStorage('favorites', [])
+    const [comparisonList, setComparisonList] = useState([])
     
     //* FUNZIONI
     // 1. aggiornare lo stato filters
@@ -99,20 +103,62 @@ export default function useOffers() {
         return [...new Set(destinations)].sort();
     }, [offers])
 
+    //* funzione di interazione x logica preferiti(useLocalStorage)
+    function toggleFavorite(offerId) {
+        // dichiarazione e richiamo di setFavoriteIds a cui passo una funzione di aggiornamento
+      setFavoriteIds((prevIds) => {
+        // verifico se l'ID è già nell'array precedente
+        if(prevIds.includes(offerId)) {
+            // se presente: rimuovo l'ID 
+            return prevIds.filter(id => id !== offerId) 
+        } else {
+            // se non presente: aggiungo l'ID
+            return [...prevIds, offerId]
+        }
+      });
+    }
+
+      //* funzione di interazione x logica confronto(useLocalStorage)
+      function toggleComparison(offerId) {setComparisonList((prevIds) => {
+        // 1. Caso RIMOZIONE (ID già presente)
+        if (prevIds.includes(offerId)) {
+            return prevIds.filter(id => id !== offerId);
+        }
+        
+        // 2. Caso LIMITE RAGGIUNTO (Non è presente, ma non c'è spazio)
+        if (prevIds.length >= 3) {
+            // Non aggiungere. Restituisco l'array precedente, bloccando l'aggiunta.
+            console.warn("Raggiunto il limite massimo di 3 offerte per il confronto.");
+            return prevIds; 
+        }
+
+        // 3. Caso AGGIUNTA (Non è presente e c'è spazio)
+        return [...prevIds, offerId];
+      });
+      }
 
     // restituisco lo stato e le funzioni per i componenti React
-    return {
-        // Dati da visualizzare (già filtrati lato client)
-        offers: filteredOffers,
-        // Dati di stato
-        isLoading,
-        error,
-        // Logica filtri
-        filters, 
-        updateFilters,
-        // Funzione per recuperare il set completo delle categorie, tratte
-        availableCategories: [...new Set(offers.map(o => o.category))].sort(), 
-        availableOrigins: availableOrigins, 
-        availableDestinations: availableDestinations, 
+    return {// Dati da visualizzare (già filtrati lato client)
+    offers: filteredOffers,
+    
+    // Dati di stato (Generali)
+    isLoading,
+    error,
+    
+    // Logica filtri
+    filters, 
+    updateFilters,
+    
+    // Funzione per recuperare il set completo delle categorie, tratte
+    availableCategories: [...new Set(offers.map(o => o.category))].sort(), 
+    availableOrigins: availableOrigins, 
+    availableDestinations: availableDestinations,
+    
+    // STATI E FUNZIONI DI INTERAZIONE:
+    favoriteIds,       // Array di ID preferiti (da usare in OfferListItem per visualizzare lo stato)
+    toggleFavorite,    // Funzione per salvare/rimuovere i preferiti
+    
+    comparisonList,    // Array di ID per il confronto (max 3)
+    toggleComparison,  // Funzione per aggiungere/rimuovere dal confronto
     };
 }
