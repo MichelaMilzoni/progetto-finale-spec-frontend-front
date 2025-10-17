@@ -7,7 +7,8 @@
 
 //* 2. Recupero Stato
 // Devo destrutturare tutti i valori di ritorno dall'hook:
-// offers (già filtrate), isLoading, error, filters, updateFilters e availableCategories.
+// offers (già filtrate), isLoading, error, filters, updateFilters
+// e availableCategories, availableDestinations, availableOrigins.
 
 //* 3. Gestione Caricamento/Errore
 // Devo usare istruzioni condizionali (if) per renderizzare: un messaggio di "Caricamento..." se isLoading è true,
@@ -18,7 +19,7 @@
 // renderizzo l'intestazione, il componente OfferFilter e il componente OfferList.
 
 //* 5. Prop Drilling
-// Devo passare le proprietà rilevanti (filters, updateFilters, categories)
+// Devo passare le proprietà rilevanti (filters, updateFilters, categories, origin, destination )
 // al componente filtro(OfferFilter) e l'array offers al componente lista(offerList).
 
 import React from "react";
@@ -29,7 +30,16 @@ import OfferListItem from "../components/Offers/OfferListItem"; // Da creare
 
 export default function OfferListPage() {
   //* 2
-  const { offers, isLoading, error, filters, updateFilters, availableCategories } = useOffers();
+  const {
+    offers,
+    isLoading,
+    error,
+    filters,
+    updateFilters,
+    availableCategories,
+    availableOrigins,
+    availableDestinations,
+  } = useOffers();
 
   //* 3
   if (isLoading) {
@@ -41,7 +51,7 @@ export default function OfferListPage() {
     );
   }
 
-  if (!error) {
+  if (error) {
     return (
       <div className="container error">
         <h2>Errore di Caricamento</h2>
@@ -61,6 +71,8 @@ export default function OfferListPage() {
         currentFilters={filters} //* 5
         onFilterChange={updateFilters} //* 5
         categories={availableCategories} //* 5
+        origin={availableOrigins} //* 5
+        destination={availableDestinations} //* 5 
       />
 
       <h2>Risultati ({offers.length} offerte trovate)</h2>
