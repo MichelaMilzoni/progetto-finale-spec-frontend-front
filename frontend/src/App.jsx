@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronUp, ChevronDown, Plus, Trash2, Edit, X, Loader2, RefreshCw } from "lucide-react";
+import OfferListPage from "./pages/OfferListPage";
 
 //* --- CONFIGURAZIONE GLOBALE & TIPI ---
 // progetto solo js e non js+typescript (quindi replico i dati contenuti nei file .ts del backend)
@@ -24,9 +25,13 @@ const initialOfferState = {
 };
 
 function App() {
-  const [count, setCount] = useState(0);
-
-  return <></>;
+  // L'unico compito di App è presentare la pagina principale dell'applicazione.
+  return (
+    <div className="App">
+      {/* Rende il componente controller che gestisce l'intera logica e UI */}
+      <OfferListPage />
+    </div>
+  );
 }
 
 export default App;

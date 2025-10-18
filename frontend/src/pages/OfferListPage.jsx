@@ -23,10 +23,11 @@
 // al componente filtro(OfferFilter) e l'array offers al componente lista(offerList).
 
 import React from "react";
-import { useOffers } from "../hooks/useOffers"; //* 1
-import OfferFilter from "../components/Offers/OfferFilter"; // Da creare
-import OfferList from "../components/Offers/OfferList"; // Da creare
-import OfferListItem from "../components/Offers/OfferListItem"; // Da creare
+import useOffers from "../hooks/useOffers"; //* 1
+import OfferFilter from "../components/OfferFilter";
+import OfferList from "../components/OfferList";
+import ComparisonBar from "../components/ComparisonBar";
+import OfferListItem from "../components/OfferListItem";
 
 export default function OfferListPage() {
   //* 2
@@ -39,6 +40,10 @@ export default function OfferListPage() {
     availableCategories,
     availableOrigins,
     availableDestinations,
+    favoriteIds,
+    toggleFavorite,
+    comparisonList,
+    toggleComparison,
   } = useOffers();
 
   //* 3
@@ -71,18 +76,30 @@ export default function OfferListPage() {
         currentFilters={filters} //* 5
         onFilterChange={updateFilters} //* 5
         categories={availableCategories} //* 5
-        origin={availableOrigins} //* 5
-        destination={availableDestinations} //* 5 
+        availableOrigins={availableOrigins} //* 5
+        availableDestinations={availableDestinations} //* 5
       />
 
       <h2>Risultati ({offers.length} offerte trovate)</h2>
 
       {/* Passo l'array di offerte filtrate al componente Lista */}
       {offers.length > 0 ? (
-        <OfferList offers={offers} />
+        <OfferList
+          offers={offers}
+          favoriteIds={favoriteIds}
+          toggleFavorite={toggleFavorite}
+          comparisonList={comparisonList}
+          toggleComparison={toggleComparison}
+        />
       ) : (
         <p>Nessuna offerta trovata con i filtri selezionati.</p>
       )}
+
+      <ComparisonBar
+        offers={offers} // L'array di offerte filtrate correnti
+        comparisonList={comparisonList}
+        toggleComparison={toggleComparison}
+      />
     </div>
   );
 }
