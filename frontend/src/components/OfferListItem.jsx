@@ -21,7 +21,7 @@ import React from "react";
 
 //* Funzione di utilità per evidenziare il testo cercato.
 const highlightText = (text, searchTerm) => {
-  // 🚨 FIX: Protezione contro text undefined e searchTerm vuota
+  // Protezione contro text undefined e searchTerm vuota
   if (!text || !searchTerm) return text;
 
   const lowerText = text.toLowerCase();
@@ -54,12 +54,22 @@ export default function OfferListItem({
 }) {
   const {
     id,
-    title = "", // Default vuoto
-    origin = "", // Default vuoto
-    destination = "", // Default vuoto
+    title = "",
+    origin = "",
+    destination = "",
     category = "",
     basePriceKm = 0,
     description = "",
+    maxPayloadKg = 0,
+    baseTimeDays = 1,
+    vatRatePct = 0,
+    multiStopCostPct = 0,
+    satCostPct = 0,
+    videoCostPct = 0,
+    insuranceIncludedEuro = 0,
+    isEcoFriendly = false,
+    fleetAvailabilityPct = 0,
+    updatedAt,
   } = offer || {};
 
   //* LOGICA STATI
@@ -69,46 +79,71 @@ export default function OfferListItem({
   //* DISABILITAZIONE PULSANTE CONFRONTA - se la lista è piena
   const isComparisonDisabled = comparisonList.length === 3 && !isCompared;
 
+  //* FORMATTAZIONE DATA
+  let formattedUpdateDate = "N/A";
+
+  if (updatedAt) {
+    const dateObject = new Date(updatedAt);
+
+    // Verifico che l'oggetto Date sia valido (controlla se non è "Invalid Date")
+    if (!isNaN(dateObject)) {
+      formattedUpdateDate = dateObject.toLocaleDateString("it-IT");
+    }
+  }
+
   return (
     <div className="card">
+      {" "}
       <div className="card-list">
         <section className="title-card-list">
-          <h3>{title}</h3>
+          <h3>{highlightText(title, searchTerm)}</h3> {/* Uso highlightText */}
+          <span className="category">({category})</span>
         </section>
-
         <section className="body-card-list">
           <p>
-            <strong>Origine:</strong> {origin}
+            <strong>Origine:</strong> {highlightText(origin, searchTerm)}
           </p>
           <p>
-            <strong>Destinazione:</strong> {destination}
+            <strong>Destinazione:</strong> {highlightText(destination, searchTerm)}{" "}
           </p>
           <p>
             <strong>Categoria:</strong> {category}
           </p>
           <p>
-            {/* 3. Formattazione corretta del prezzo */}
             <strong>Prezzo base/km:</strong> €{basePriceKm.toFixed(2)}
           </p>
           <p>
-            <strong>Descrizione:</strong> {description}
+            <strong>Carico Max:</strong> {maxPayloadKg} kg
           </p>
+          <p>
+            <strong>Tempo Base:</strong> {baseTimeDays} giorni
+          </p>
+          <p>
+            <strong>Assicurazione inclusa:</strong> €{insuranceIncludedEuro.toFixed(2)}
+          </p>
+          <p>
+            <strong>Ecosostenibile:</strong> {isEcoFriendly ? "Sì ✅" : "No ❌"}
+          </p>
+          <p>
+            <strong>Disponibilità Flotta:</strong> {(fleetAvailabilityPct * 100).toFixed(0)}%
+          </p>
+          <p className="description-text">
+            <strong>Descrizione:</strong> {highlightText(description, searchTerm)}
+          </p>
+          <small>Ultimo aggiornamento: {formattedUpdateDate}</small>
         </section>
       </div>
-
-      {/* 4. Azioni e interazione con l'utente */}
       <div className="card-actions">
         <button
           className={`wishlist-button ${isFavorite ? "active" : ""}`}
-          onClick={() => toggleFavorite(id)} // Passa l'ID al toggle
+          onClick={() => toggleFavorite(id)}
         >
           {isFavorite ? "Rimuovi dai Preferiti ★" : "Salva nei Preferiti ☆"}
         </button>
-
         <button
           className={`details-button ${isCompared ? "compared" : ""}`}
-          onClick={() => toggleComparison(id)} // Passa l'ID al toggle
-          disabled={isComparisonDisabled} // Disabilita se max 3 e non selezionata
+          onClick={() => toggleComparison(id)}
+          disabled={isComparisonDisabled}
         >
           {isCompared ? "Rimuovi dal Confronto" : "Aggiungi al Confronto"}
           {isComparisonDisabled && " (Max 3)"}

@@ -3,7 +3,7 @@
 // idealmente, avviare il confronto vero e proprio
 import React from "react";
 
-export default function ComparisonBar(ComparisonList, offers = [], toggleComparison) {
+export default function ComparisonBar({ comparisonList = [], offers = [], toggleComparison }) {
   //* 1. Filtro l'array completo delle offerte per trovare solo quelle nella lista di confronto
   // Questo è necessario perché comparisonList contiene solo gli ID.
   const offersToCompare = offers.filter((offer) => comparisonList.includes(offer.id));

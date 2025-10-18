@@ -86,6 +86,7 @@ export default function OfferListPage() {
       {offers.length > 0 ? (
         <OfferList
           offers={offers}
+          searchTerm={filters.search}
           favoriteIds={favoriteIds}
           toggleFavorite={toggleFavorite}
           comparisonList={comparisonList}

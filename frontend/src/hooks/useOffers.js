@@ -11,50 +11,73 @@
 // 4. La gestione degli stati di isLoading e error
 
 //* IMPORT
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import useDebounce from './useDebounce'; 
+import useLocalStorage from './useLocalStorage';
 
 //* URL BASE PER LA CHIAMATA API
-const API_BASE_URL = 'http://localhost:3001/companyoffer';
+const API_BASE_URL = 'http://localhost:3001/companyoffers';
+
+const INITIAL_FILTERS = {
+    // search e category vengono gestiti come prop
+    origin: '',
+    destination: '',
+};
 
 
-export const useOffers = (searchQuery, categoryFilter) => {
-    //* stato x le offerte complete (senza tipi)
-    const [offers, setOffers] = useState([])
-    //* stato x il caricamento
-    const [isLoading, setIsLoading] = useState(false)
+export default function useOffers(searchQuery, categoryFilter) {
+    // STATO DATI E UI
+    const [allOffers, setAllOffers] = useState([]); // Array delle offerte COMPLETE *non* filtrate
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null); // Stato per la gestione errori
+    
+    // STATO FILTRI AVANZATI
+    const [filters, setFilters] = useState(INITIAL_FILTERS); // Stato per i filtri avanzati
+    const debouncedFilters = useDebounce(filters, 300); // Debounce sui filtri
+
+    // STATO INTERAZIONI AVANZATE (HOOK AUSILIARI)
+    const [favoriteIds, setFavoriteIds] = useLocalStorage('favorites', []); 
+    const [comparisonList, setComparisonList] = useLocalStorage('comparison', []);
 
     //* wrappo la funzione di fetching con USECALLBACK per evitare ricreazioni inutili
     const fetchFullOffers = useCallback(async () => {
-        //* imposto lo ststo di caricamento a true
+        //* imposto lo stato di caricamento a true
         setIsLoading(true);
-        //* pulisco l'array di offerte prima di una nuova ricerca
-        setOffers([]);
+        //* pulisco eventuali errori
+        setError(null);
+        //* pulisco l'array di offerte completa prima di una nuova ricerca
+        setAllOffers([]); // Pulisco l'array completo, non 'offers'
 
         try {
-            //* CHIAMATA
-            // costruisco i parametri di query (search + category) x filtrare il risultato
-            const query = new URLSearchParams();
-            if (searchQuery) query.append('search', searchQuery);
-            if (categoryFilter) query.append('category', categoryFilter);
+            //* CHIAMATA PARZIALE
+        // costruisco i parametri di query (search + category) x filtrare il risultato
+        const query = new URLSearchParams();
+        if (searchQuery) query.append('search', searchQuery);
+        if (categoryFilter) query.append('category', categoryFilter);
 
-            const listUrl = `${API_BASE_URL}?${query.toString()}`
-            console.log(`[Fetch] Richiesta lista parziale: ${listUrl}`)
+        const listUrl = `${API_BASE_URL}?${query.toString()}`
+        console.log(`[Fetch] Richiesta lista parziale: ${listUrl}`)
 
-            //* PRIMA FETCH (restituisce solo ID, title, category, ecc.)
-            const listResponse = await fetch(listUrl);
-            if(!listResponse.ok) throw new Error("Errore nel recupero della lista parziale");
+        //* PRIMA FETCH (restituisce solo ID, title, category, ecc.)
+        const listResponse = await fetch(listUrl);
+        if(!listResponse.ok) throw new Error("Errore nel recupero della lista parziale");
 
-            const partialOffers = await listResponse.json()
+        const partialOffers = await listResponse.json()
 
-            if (partialOffers.length === 0) {
-                setOffers([])
-                setIsLoading(false)
-                return; // nulla da fare se la lista è vuota
-            }
+        console.log("[DEBUG] partialOffers length:", partialOffers.length);
+        console.log("[DEBUG] partialOffers data:", partialOffers);
 
-            //* SECONDA FETCH (chiamate multiple x fetching completo)
-            // mappo l'array parziale per creare una Promise di fetch per ogni ID
-            const fullOfferPromise = partialOffers.map(partial => 
+        if (partialOffers.length === 0) {
+            setAllOffers([]); // Usa setAllOffers, non setOffers
+            setIsLoading(false)
+            return; // nulla da fare se la lista è vuota
+        }
+
+        //* SECONDA FETCH (chiamate multiple x fetching completo)
+        // Mappa l'array parziale per creare una Promise di fetch per ogni ID.
+        const fullOfferPromises = partialOffers.map(partial => 
+            
+            (partial.id ? 
                 fetch(`${API_BASE_URL}/${partial.id}`)
                 .then(res => {
                     if(!res.ok) throw new Error(`Errore nel recupero dettaglio per ID ${partial.id}`)
@@ -68,17 +91,18 @@ export const useOffers = (searchQuery, categoryFilter) => {
                     console.error(`Errore nel recupero del dettaglio per ID ${partial.id}`, err);
                     return null; // Ritorno null per non bloccare Promise.all
                 })
-            );
+                : null // Se l'ID è nullo/undefined, restituisce null per la Promise.all
+            )
+        ).filter(p => p !== null); // Filtra via gli eventuali 'null' prima del Promise.all
 
-            // attendo che tutte le Promises siano risolte (DOPPIO FETCH COMPLETATO)
-            const fullOffers = (await Promise.all(fullOfferPromises)).filter(offer => offer !== null);
+        // attendo che tutte le Promises siano risolte (DOPPIO FETCH COMPLETATO)
+        const fullOffers = (await Promise.all(fullOfferPromises)).filter(offer => offer !== null);
 
-            // aggiorno lo stato con l'array di offerte complete
-            setOffers(fullOffers)
-
+        // aggiorno lo stato con l'array di offerte completo
+        setAllOffers(fullOffers)
         } catch (error) {
             console.error("Errore fatale nel fetching delle offerte:", error)
-            //! qui posso aggiungere un errore visivo per l'utente
+            setError("Impossibile caricare i dati dal server.");
         } finally {
             //imposto lo stato di caricamento a false in ogni caso
             setIsLoading(false)
@@ -90,6 +114,72 @@ export const useOffers = (searchQuery, categoryFilter) => {
         fetchFullOffers();
     }, [fetchFullOffers]);
 
-    //* ritorno lo stato e la variabile di caricamento
-    return {offers, isLoading }
+    //* useMemo
+    const filteredOffers = useMemo(() => { 
+    if (!allOffers) return [];
+
+    // Filtri lato client per Tratte (origin, destination)
+    return allOffers.filter(offer => {
+        if (debouncedFilters.origin && offer.origin !== debouncedFilters.origin) return false;
+        if (debouncedFilters.destination && offer.destination !== debouncedFilters.destination) return false;
+        return true;
+    });
+}, [allOffers, debouncedFilters]);
+
+// Uso useMemo per calcolare i valori unici solo quando 'allOffers' cambia
+const availableCategories = useMemo(() => {
+    const categories = new Set(allOffers.map(o => o.category));
+    return Array.from(categories);
+}, [allOffers]);
+
+const availableOrigins = useMemo(() => {
+    const origins = new Set(allOffers.map(o => o.origin));
+    return Array.from(origins);
+}, [allOffers]);
+
+const availableDestinations = useMemo(() => {
+    const destinations = new Set(allOffers.map(o => o.destination));
+    return Array.from(destinations);
+}, [allOffers]);
+
+    
+    //* FUNZIONI DI UPDATE (Callbacks)
+    const updateFilters = useCallback((newFilters) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+    }, []);
+
+    const toggleFavorite = useCallback((id) => {
+        setFavoriteIds(prev => (prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]));
+    }, [setFavoriteIds]);
+
+    const toggleComparison = useCallback((id) => {
+        setComparisonList(prev => {
+            const isCompared = prev.includes(id);
+            if (isCompared) return prev.filter(compId => compId !== id);
+            if (prev.length < 3) return [...prev, id]; // Limite di 3
+            return prev;
+        });
+    }, [setComparisonList]);
+
+
+    // ----------------------------------------------------
+    // RITORNO FINALE (10 PROPRIETÀ RICHIESTE DA OfferListPage)
+    // ----------------------------------------------------
+    return {
+        offers: filteredOffers, // Array di offerte *filtrate* e COMPLETE
+        isLoading,
+        error, // RESTITUISCO LO STATO ERRORE
+        filters, // RESTITUISCO LO STATO FILTRI AVANZATI
+        updateFilters, // RESTITUISCO LA FUNZIONE DI UPDATE
+        
+        availableCategories, // RESTITUISCO I DATI PER IL FILTRO CATEGORIE
+        availableOrigins, // RESTITUISCO I DATI PER IL FILTRO ORIGINE
+        availableDestinations, // RESTITUISCO I DATI PER IL FILTRO DESTINAZIONE
+
+        favoriteIds, // RESTITUISCO L'ARRAY DI ID PREFERITI
+        toggleFavorite, // RESTITUISCO LA FUNZIONE TOGGLE
+        comparisonList, // RESTITUISCO L'ARRAY DI ID CONFRONTO
+        toggleComparison, // RESTITUISCO LA FUNZIONE TOGGLE
+    };
 }
+
