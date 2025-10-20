@@ -17,7 +17,6 @@
 
 import OfferListItem from "./OfferListItem";
 
-
 export default function OfferList({
   offers,
   searchTerm,
@@ -26,21 +25,29 @@ export default function OfferList({
   comparisonList,
   toggleComparison,
 }) {
+  // Calcoliamo qui la logica di disabilitazione per evitare di ripeterla nel loop
+  const isComparisonDisabled = comparisonList.length >= 3;
 
   return (
-    <ul>
+    // Contenitore della griglia: 'row' per la griglia, 'g-4' per lo spazio tra le card
+    <div className="row g-4">
       {offers.map((offer) => (
-        <OfferListItem
-          key={offer.id}
-          offer={offer}
-          searchTerm={searchTerm} // Lo passo all'Item
-          toggleFavorite={toggleFavorite}
-          toggleComparison={toggleComparison} // Il tuo OfferListItem usa favoriteIds e comparisonList direttamente,
-          // quindi li passiamo.
-          favoriteIds={favoriteIds}
-          comparisonList={comparisonList}
-        />
+        // Ogni OfferListItem deve essere avvolto in una colonna (col)
+        // Col-12 (100%) su mobile, Col-md-6 (50%) su tablet, Col-lg-4 (33.3%) su desktop
+        <div key={offer.id} className="col-12 col-md-6 col-lg-4">
+          <OfferListItem
+            offer={offer}
+            searchTerm={searchTerm}
+            toggleFavorite={toggleFavorite}
+            toggleComparison={toggleComparison}
+            // Passaggio dello stato calcolato
+            isFavorite={favoriteIds.includes(offer.id)}
+            isCompared={comparisonList.includes(offer.id)}
+            // Logica di disabilitazione
+            isComparisonDisabled={isComparisonDisabled && !comparisonList.includes(offer.id)}
+          />
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }

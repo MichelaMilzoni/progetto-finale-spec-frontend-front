@@ -18,6 +18,7 @@
 // 5. "Salva nei Preferiti": Sarà usato per attivare la logica localStorage
 
 import React from "react";
+import { Link } from "react-router-dom";
 
 //* Funzione di utilità per evidenziare il testo cercato.
 const highlightText = (text, searchTerm) => {
@@ -46,6 +47,7 @@ const highlightText = (text, searchTerm) => {
 
 export default function OfferListItem({
   offer,
+  allOffers,
   searchTerm,
   favoriteIds = [],
   toggleFavorite,
@@ -92,60 +94,93 @@ export default function OfferListItem({
   }
 
   return (
-    <div className="card">
-      {" "}
-      <div className="card-list">
-        <section className="title-card-list">
-          <h3>{highlightText(title, searchTerm)}</h3> {/* Uso highlightText */}
-          <span className="category">({category})</span>
+    // Usa le classi card standard: h-100 per altezza uniforme, shadow per ombreggiatura
+    <div className="card h-100 shadow-sm border-0">
+      {/* Corpo della Card */}
+      <div className="card-body d-flex flex-column">
+        {/* Sezione Titolo (Header della Card) */}
+        <section className="mb-3 border-bottom pb-2">
+          <div className="d-flex justify-content-between align-items-baseline">
+            {/* Titolo e Link */}
+            <Link to={`/offers/${id}`} className="text-decoration-none text-primary">
+              {/* Usa h5 per un titolo più appropriato per la card */}
+              <h5 className="card-title fw-bold">{highlightText(title, searchTerm)}</h5>
+            </Link>
+
+            {/* Categoria come badge */}
+            <span className="badge bg-secondary text-white">{category}</span>
+          </div>
         </section>
-        <section className="body-card-list">
-          <p>
-            <strong>Origine:</strong> {highlightText(origin, searchTerm)}
+
+        {/* Sezione Dettagli (Body della Card) */}
+        <section className="card-text small mb-3 flex-grow-1">
+          <div className="row g-2">
+            {/* Dettagli Tratta (Colonna 1) */}
+            <div className="col-6">
+              <p className="mb-1">
+                <strong>Origine:</strong> {highlightText(origin, searchTerm)}
+              </p>
+              <p className="mb-1">
+                <strong>Destinazione:</strong> {highlightText(destination, searchTerm)}
+              </p>
+              <p className="mb-1">
+                <strong>Carico Max:</strong> {maxPayloadKg} kg
+              </p>
+            </div>
+
+            {/* Dettagli Prezzo/Tempo (Colonna 2) */}
+            <div className="col-6">
+              <p className="mb-1 text-success fw-bold">
+                <strong>Prezzo base/km:</strong> €{basePriceKm.toFixed(2)}
+              </p>
+              <p className="mb-1">
+                <strong>Tempo Base:</strong> {baseTimeDays} giorni
+              </p>
+              <p className="mb-1">
+                <strong>Assicurazione:</strong> €{insuranceIncludedEuro.toFixed(0)}
+              </p>
+            </div>
+          </div>
+
+          <hr className="my-2" />
+
+          {/* Riga Caratteristiche Speciali */}
+          <div className="d-flex justify-content-between small">
+            <span className={`fw-bold ${isEcoFriendly ? "text-success" : "text-danger"}`}>
+              {isEcoFriendly ? "Ecosostenibile ✅" : "Non Ecosostenibile ❌"}
+            </span>
+            <span className="text-muted">
+              Disponibilità Flotta: {(fleetAvailabilityPct * 100).toFixed(0)}%
+            </span>
+          </div>
+
+          {/* Descrizione Breve */}
+          <p className="mt-2 text-truncate" style={{ maxHeight: "2.5rem" }}>
+            {highlightText(description, searchTerm)}
           </p>
-          <p>
-            <strong>Destinazione:</strong> {highlightText(destination, searchTerm)}{" "}
-          </p>
-          <p>
-            <strong>Categoria:</strong> {category}
-          </p>
-          <p>
-            <strong>Prezzo base/km:</strong> €{basePriceKm.toFixed(2)}
-          </p>
-          <p>
-            <strong>Carico Max:</strong> {maxPayloadKg} kg
-          </p>
-          <p>
-            <strong>Tempo Base:</strong> {baseTimeDays} giorni
-          </p>
-          <p>
-            <strong>Assicurazione inclusa:</strong> €{insuranceIncludedEuro.toFixed(2)}
-          </p>
-          <p>
-            <strong>Ecosostenibile:</strong> {isEcoFriendly ? "Sì ✅" : "No ❌"}
-          </p>
-          <p>
-            <strong>Disponibilità Flotta:</strong> {(fleetAvailabilityPct * 100).toFixed(0)}%
-          </p>
-          <p className="description-text">
-            <strong>Descrizione:</strong> {highlightText(description, searchTerm)}
-          </p>
-          <small>Ultimo aggiornamento: {formattedUpdateDate}</small>
         </section>
+
+        {/* Aggiornamento Data */}
+        <small className="text-muted mt-auto">Ultimo aggiornamento: {formattedUpdateDate}</small>
       </div>
-      <div className="card-actions">
+
+      {/* Sezione Azioni (Card Footer) */}
+      <div className="card-footer d-grid gap-2 d-md-flex justify-content-md-end bg-light border-top">
+        {/* Pulsante Preferiti */}
         <button
-          className={`wishlist-button ${isFavorite ? "active" : ""}`}
+          className={`btn btn-sm ${isFavorite ? "btn-danger" : "btn-outline-danger"}`}
           onClick={() => toggleFavorite(id)}
         >
-          {isFavorite ? "Rimuovi dai Preferiti ★" : "Salva nei Preferiti ☆"}
+          {isFavorite ? "Rimuovi ★" : "Salva ☆"}
         </button>
+
+        {/* Pulsante Confronto */}
         <button
-          className={`details-button ${isCompared ? "compared" : ""}`}
+          className={`btn btn-sm ${isCompared ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => toggleComparison(id)}
           disabled={isComparisonDisabled}
         >
-          {isCompared ? "Rimuovi dal Confronto" : "Aggiungi al Confronto"}
+          {isCompared ? "Rimuovi" : "Confronta"}
           {isComparisonDisabled && " (Max 3)"}
         </button>
       </div>

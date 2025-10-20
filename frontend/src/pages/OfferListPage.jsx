@@ -33,6 +33,7 @@ export default function OfferListPage() {
   //* 2
   const {
     offers,
+    allOffers,
     isLoading,
     error,
     filters,
@@ -47,57 +48,65 @@ export default function OfferListPage() {
   } = useOffers();
 
   //* 3
+  // Gestione Caricamento e Errore
   if (isLoading) {
     return (
-      <div className="container">
-        <h2>Caricamento Offerte...</h2>
-        <p>Attendere, stiamo recuperando i dati dal server.</p>
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container error">
-        <h2>Errore di Caricamento</h2>
-        <p>Si è verificato un errore: {error}</p>
-        <p>Riprova più tardi.</p>
+      <div className="container mt-5 alert alert-danger">
+        Errore nel caricamento delle offerte: {error}
       </div>
     );
   }
 
-  //* 4
   return (
-    <div className="offer-page-layout">
-      <h1>Catalogo Offerte Trasporto Merci</h1>
+    // Contenitore principale con margine superiore (dovrebbe essere dentro il tag <main> in App.jsx)
+    <div className="container py-4 mt-4">
+      <h1 className="mb-4 text-center text-primary">Catalogo Offerte Trasporto Merci</h1>
 
-      {/* Passo i filtri e la funzione di aggiornamento al componente Filtri */}
+      {/* 1. Filtri e Ordinamento */}
       <OfferFilter
-        currentFilters={filters} //* 5
-        onFilterChange={updateFilters} //* 5
-        categories={availableCategories} //* 5
-        availableOrigins={availableOrigins} //* 5
-        availableDestinations={availableDestinations} //* 5
+        currentFilters={filters}
+        onFilterChange={updateFilters}
+        categories={availableCategories}
+        availableOrigins={availableOrigins}
+        availableDestinations={availableDestinations}
       />
 
-      <h2>Risultati ({offers.length} offerte trovate)</h2>
+      {/* 2. Conteggio Risultati */}
+      <h2 className="fs-5 mt-4 mb-3 text-secondary">
+        Risultati: <span className="badge bg-primary">{offers.length}</span> offerte trovate
+      </h2>
 
-      {/* Passo l'array di offerte filtrate al componente Lista */}
+      {/* 3. Lista Offerte */}
       {offers.length > 0 ? (
+        // ✅ IMPORTANTE: Se usi un componente OfferList, assicurati che contenga le classi row
         <OfferList
           offers={offers}
-          searchTerm={filters.search}
           favoriteIds={favoriteIds}
           toggleFavorite={toggleFavorite}
           comparisonList={comparisonList}
           toggleComparison={toggleComparison}
+          // Passa il termine di ricerca per l'highlighting
+          searchTerm={filters.search}
         />
       ) : (
-        <p>Nessuna offerta trovata con i filtri selezionati.</p>
+        <div className="alert alert-info text-center" role="alert">
+          Nessuna offerta trovata con i filtri selezionati. Prova a resettare i filtri!
+        </div>
       )}
 
+      {/* 4. Comparison Bar (Se è un componente fisso in fondo allo schermo) */}
       <ComparisonBar
-        offers={offers} // L'array di offerte filtrate correnti
+        offers={allOffers}
         comparisonList={comparisonList}
         toggleComparison={toggleComparison}
       />

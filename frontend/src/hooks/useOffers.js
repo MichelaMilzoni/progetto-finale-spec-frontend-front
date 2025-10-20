@@ -19,13 +19,19 @@ import useLocalStorage from './useLocalStorage';
 const API_BASE_URL = 'http://localhost:3001/companyoffers';
 
 const INITIAL_FILTERS = {
-    // search e category vengono gestiti come prop
+    // FILTRI PER LA FETCH (API)
+    search: '',     
+    category: '',   
+    // FILTRI LATO CLIENT (TRATTE)
     origin: '',
     destination: '',
+    // FILTRI ORDINAMENTO
+    sortBy: 'title',
+    sortOrder: 'asc'
 };
 
 
-export default function useOffers(searchQuery, categoryFilter) {
+export default function useOffers() {
     // STATO DATI E UI
     const [allOffers, setAllOffers] = useState([]); // Array delle offerte COMPLETE *non* filtrate
     const [isLoading, setIsLoading] = useState(false);
@@ -52,8 +58,8 @@ export default function useOffers(searchQuery, categoryFilter) {
             //* CHIAMATA PARZIALE
         // costruisco i parametri di query (search + category) x filtrare il risultato
         const query = new URLSearchParams();
-        if (searchQuery) query.append('search', searchQuery);
-        if (categoryFilter) query.append('category', categoryFilter);
+        if (debouncedFilters.search) query.append('search', debouncedFilters.search);
+        if (debouncedFilters.category) query.append('category', debouncedFilters.category);
 
         const listUrl = `${API_BASE_URL}?${query.toString()}`
         console.log(`[Fetch] Richiesta lista parziale: ${listUrl}`)
@@ -107,7 +113,7 @@ export default function useOffers(searchQuery, categoryFilter) {
             //imposto lo stato di caricamento a false in ogni caso
             setIsLoading(false)
         }
-    }, [searchQuery, categoryFilter]); //la funzione si ricrea solo se i filtri cambiano
+    }, [debouncedFilters.search, debouncedFilters.category]); //la funzione si ricrea solo se i filtri cambiano
 
     //* useEffect x eseguire la fetch al mount dell'hook
     useEffect(() => {
@@ -116,14 +122,65 @@ export default function useOffers(searchQuery, categoryFilter) {
 
     //* useMemo
     const filteredOffers = useMemo(() => { 
-    if (!allOffers) return [];
+        //estrazione parametri di ordinamento
+    const {
+        sortBy,
+        sortOrder,
+    } = debouncedFilters;
 
-    // Filtri lato client per Tratte (origin, destination)
-    return allOffers.filter(offer => {
+    if (!allOffers || allOffers.length === 0) return [];
+
+    const currentSearchTerm = debouncedFilters.search.toLowerCase();
+
+    // 2. Esecuzione del Filtraggio
+    let filtered = allOffers.filter(offer => {
         if (debouncedFilters.origin && offer.origin !== debouncedFilters.origin) return false;
         if (debouncedFilters.destination && offer.destination !== debouncedFilters.destination) return false;
+        
+        
+        // Ricerca su tutti i campi rilevanti (title, origin, destination)
+        if (currentSearchTerm) {
+            const searchFields = [
+                offer.title,
+                offer.origin,
+                offer.destination,
+                offer.category
+            ];
+
+            // Se NESSUNO dei campi contiene il termine di ricerca, escludo l'offerta.
+            const matchesSearch = searchFields.some(field => 
+                field && field.toLowerCase().includes(currentSearchTerm)
+            );
+
+            if (!matchesSearch) return false;
+        }
+
         return true;
     });
+
+    // 3. Esecuzione dell'Ordinamento
+    // Uso .slice() per creare una copia ed evitare di modificare l'array originale (allOffers o filtered)
+    const sorted = filtered.slice().sort((a, b) => {
+        const aVal = a[sortBy] || '';
+        const bVal = b[sortBy] || '';
+
+        // Gestione del confronto (stringhe e numeri)
+        let comparison = 0;
+
+        if (typeof aVal === 'string') {
+            comparison = aVal.localeCompare(bVal);
+        } else if (aVal > bVal) {
+            comparison = 1;
+        } else if (aVal < bVal) {
+            comparison = -1;
+        }
+
+        // 4. Applicazione della Direzione
+        // Se l'ordinamento è 'desc', invertiamo il risultato del confronto.
+        return sortOrder === 'desc' ? comparison * -1 : comparison;
+    });
+
+    return sorted; // Restituisce l'array filtrato E ordinato
 }, [allOffers, debouncedFilters]);
 
 // Uso useMemo per calcolare i valori unici solo quando 'allOffers' cambia
@@ -153,12 +210,21 @@ const availableDestinations = useMemo(() => {
     }, [setFavoriteIds]);
 
     const toggleComparison = useCallback((id) => {
-        setComparisonList(prev => {
-            const isCompared = prev.includes(id);
-            if (isCompared) return prev.filter(compId => compId !== id);
-            if (prev.length < 3) return [...prev, id]; // Limite di 3
-            return prev;
-        });
+    setComparisonList(prev => {
+        const isCompared = prev.includes(id);
+
+        if (isCompared) {
+            // RIMOZIONE: questa parte dovrebbe essere perfetta
+            return prev.filter(compId => compId !== id); 
+        }
+
+        // AGGIUNTA: la logica del limite è qui, ma non dovrebbe causare il bug di RIMOZIONE
+        if (prev.length < 3) {
+            return [...prev, id]; 
+        }
+
+        return prev;
+    });
     }, [setComparisonList]);
 
 
@@ -167,6 +233,7 @@ const availableDestinations = useMemo(() => {
     // ----------------------------------------------------
     return {
         offers: filteredOffers, // Array di offerte *filtrate* e COMPLETE
+        allOffers: allOffers,
         isLoading,
         error, // RESTITUISCO LO STATO ERRORE
         filters, // RESTITUISCO LO STATO FILTRI AVANZATI

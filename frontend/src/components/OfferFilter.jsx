@@ -33,50 +33,125 @@ export default function OfferFilter({
   };
 
   return (
-    <div className="filters-container">
-      {/* 1. Filtro Ricerca Testuale */}
-      <input
-        type="text"
-        name="search"
-        placeholder="Cerca parola chiave..."
-        value={currentFilters.search}
-        onChange={handleChange}
-      />
-      {/* 2. Filtro Categoria */}
-      <select name="category" value={currentFilters.category} onChange={handleChange}>
-        <option value="">Tutte le Categorie</option> {/* Reset */}
-        {categories.map((category) => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
-      </select>
-      {/* 3. Filtro Origine (Tratta) */}
-      <select name="origin" value={currentFilters.origin} onChange={handleChange}>
-        <option value="">Tutte le Partenze</option> {/* Reset */}
-        {availableOrigins.map(
-          (
-            origin // CORRETTO: Uso availableOrigins
-          ) => (
-            <option key={origin} value={origin}>
-              {origin}
-            </option>
-          )
-        )}
-      </select>
-      {/* 4. Filtro Destinazione (Tratta) */}
-      <select name="destination" value={currentFilters.destination} onChange={handleChange}>
-        <option value="">Tutte le Destinazioni</option> {/* Reset */}
-        {availableDestinations.map(
-          (
-            destination // CORRETTO: Uso availableDestinations
-          ) => (
-            <option key={destination} value={destination}>
-              {destination}
-            </option>
-          )
-        )}
-      </select>
-    </div>
+    <>
+      <div className="p-3 my-4 shadow-sm bg-light rounded">
+        <h5 className="mb-3 text-primary">Filtri e Ordinamento Offerte</h5>
+
+        {/* Sezione Filtri (Search e Selects) */}
+        <div className="row g-3 align-items-end mb-4">
+          {/* 1. Filtro Ricerca Testuale */}
+          <div className="col-lg-3 col-md-6 col-sm-12">
+            <label htmlFor="search" className="form-label visually-hidden">
+              Cerca parola chiave
+            </label>
+            <input
+              type="text"
+              name="search"
+              className="form-control" // Classe Bootstrap per input
+              placeholder="Cerca parola chiave..."
+              value={currentFilters.search}
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* 2. Filtro Categoria */}
+          <div className="col-lg-2 col-md-6 col-sm-6">
+            <label htmlFor="category" className="form-label small text-muted">
+              Categoria
+            </label>
+            <select
+              name="category"
+              className="form-select" // Classe Bootstrap per select
+              value={currentFilters.category}
+              onChange={(e) => onFilterChange({ category: e.target.value })}
+            >
+              <option value="">Tutte le Categorie</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Filtro Origine (Tratta) */}
+          <div className="col-lg-2 col-md-6 col-sm-6">
+            <label htmlFor="origin" className="form-label small text-muted">
+              Partenza
+            </label>
+            <select
+              name="origin"
+              className="form-select"
+              value={currentFilters.origin}
+              onChange={handleChange}
+            >
+              <option value="">Tutte le Partenze</option>
+              {availableOrigins.map((origin) => (
+                <option key={origin} value={origin}>
+                  {origin}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Filtro Destinazione (Tratta) */}
+          <div className="col-lg-2 col-md-6 col-sm-12">
+            <label htmlFor="destination" className="form-label small text-muted">
+              Destinazione
+            </label>
+            <select
+              name="destination"
+              className="form-select"
+              value={currentFilters.destination}
+              onChange={handleChange}
+            >
+              <option value="">Tutte le Destinazioni</option>
+              {availableDestinations.map((destination) => (
+                <option key={destination} value={destination}>
+                  {destination}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <hr className="my-3" />
+
+        {/* Sezione Ordinamento */}
+        <div className="row g-3 align-items-end">
+          {/* 5. Criterio di Ordinamento (sortBy) */}
+          <div className="col-lg-3 col-md-6 col-sm-6">
+            <label htmlFor="sortBy" className="form-label small text-muted">
+              Ordina per:
+            </label>
+            <select
+              name="sortBy"
+              className="form-select"
+              value={currentFilters.sortBy}
+              onChange={(e) => onFilterChange({ sortBy: e.target.value })}
+            >
+              <option value="title">Titolo Offerta</option>
+              <option value="category">Categoria</option>
+            </select>
+          </div>
+
+          {/* 6. Direzione di Ordinamento (sortOrder) */}
+          <div className="col-lg-2 col-md-6 col-sm-6">
+            <label htmlFor="sortOrder" className="form-label small text-muted">
+              Direzione:
+            </label>
+            <select
+              name="sortOrder"
+              className="form-select"
+              value={currentFilters.sortOrder}
+              onChange={(e) => onFilterChange({ sortOrder: e.target.value })}
+            >
+              <option value="asc">Ascendente (A-Z)</option>
+              <option value="desc">Discendente (Z-A)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

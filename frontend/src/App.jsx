@@ -1,6 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, Plus, Trash2, Edit, X, Loader2, RefreshCw } from "lucide-react";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { OffersProvider } from "./context/OffersContext";
+
+// Importa i nuovi componenti
+import NavBar from "./components/NavBar";
+import Footer from "./components/Footer";
+
 import OfferListPage from "./pages/OfferListPage";
+import OfferDetailPage from "./pages/OfferDetailPage";
+import ComparisonPage from "./pages/ComparisonPage";
+import FavoriteOffersPage from "./pages/FavoriteOffersPage";
 
 //* --- CONFIGURAZIONE GLOBALE & TIPI ---
 // progetto solo js e non js+typescript (quindi replico i dati contenuti nei file .ts del backend)
@@ -15,9 +24,9 @@ const initialOfferState = {
   basePriceKm: 1.2,
   maxPayloadKg: 30000,
   baseTimeDays: 2,
-  multiStopCostPct: 0.0,
-  satCostPct: 0.0,
-  videoCostPct: 0.0,
+  multiStopCostPct: 0.03,
+  satCostPct: 0.05,
+  videoCostPct: 0.05,
   insuranceIncludedEuro: 500,
   isEcoFriendly: false,
   fleetAvailabilityPct: 0.95,
@@ -27,9 +36,26 @@ const initialOfferState = {
 function App() {
   // L'unico compito di App è presentare la pagina principale dell'applicazione.
   return (
-    <div className="App">
-      {/* Rende il componente controller che gestisce l'intera logica e UI */}
-      <OfferListPage />
+    // 1. Contenitore App: Flexbox verticale, altezza minima 100% della viewport
+    <div className="App d-flex flex-column min-vh-100">
+      <OffersProvider>
+        <Router>
+          <NavBar />
+
+          {/* 2. Contenitore Principale: Si espande per riempire lo spazio */}
+          <main className="flex-grow-1">
+            <Routes>
+              <Route path="/" element={<OfferListPage />} />
+              <Route path="/offers/:offerId" element={<OfferDetailPage />} />
+              <Route path="/compare" element={<ComparisonPage />} />
+              <Route path="/favorites" element={<FavoriteOffersPage />} />
+            </Routes>
+          </main>
+
+          {/* 3. FOOTER */}
+          <Footer />
+        </Router>
+      </OffersProvider>
     </div>
   );
 }

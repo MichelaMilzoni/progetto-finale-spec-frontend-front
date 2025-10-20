@@ -50,19 +50,25 @@ function useWebStorage (key, initialValue, storageType='local') {
         const newValue = value instanceof Function ? value(storedValue) : value;
         // aggiorno lo stato in React
         setStoredValue(newValue);
-        // salvo il nuovo valore nello storage
+    };
+
+    //* L'aggiornamento di localStorage avviene DOPO il rendering
+
+    useEffect(() => {
+// salvo il nuovo valore nello storage
         if (typeof window !== 'undefined') {
+            // Scrivo il valore persistente ogni volta che storedValue cambia
             try {
-                storage.setItem(key, JSON.stringify(newValue));
+                storage.setItem(key, JSON.stringify(storedValue));
             } catch (error) {
                 console.error(`Errore di scrittura ${storageType}Storage [${key}]:`, error);
             }
         }
+    }, [key, storedValue, storageType]) // Dipende da key e storedValue
+        return [storedValue, setValue];
     };
 
-        return [storedValue, setValue];
-}
-
+        
 //* 6. esporto entrambe le varianti x comodità anche se uso localStorage
 export function useLocalStorage(key, initialValue) {
     return useWebStorage(key, initialValue, 'local')
